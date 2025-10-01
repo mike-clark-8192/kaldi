@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # 7p is as 7o but adding the option "--constrained false" to --egs.opts.
 # This is the new 'unconstrained egs' code where it uses the e2e examples.
@@ -29,7 +29,7 @@ stage=0
 train_stage=-10
 get_egs_stage=-10
 speed_perturb=true
-affix=7o_uc
+affix=7p
 suffix=
 $speed_perturb && suffix=_sp
 if [ -e data/rt03 ]; then maybe_rt03=rt03; else maybe_rt03= ; fi
@@ -114,7 +114,7 @@ if [ $stage -le 12 ]; then
   echo "$0: creating neural net configs using the xconfig parser";
 
   num_targets=$(tree-info $treedir/tree |grep num-pdfs|awk '{print $2}')
-  learning_rate_factor=$(echo "print 0.5/$xent_regularize" | python)
+  learning_rate_factor=$(echo "print (0.5/$xent_regularize)" | python)
   opts="l2-regularize=0.004 dropout-proportion=0.0 dropout-per-dim=true dropout-per-dim-continuous=true"
   linear_opts="orthonormal-constraint=-1.0 l2-regularize=0.004"
   output_opts="l2-regularize=0.002"
@@ -185,6 +185,7 @@ if [ $stage -le 13 ]; then
 
 
   steps/nnet3/chain/train.py --stage $train_stage \
+    --cmd "$train_cmd" \
     --feat.online-ivector-dir exp/nnet3/ivectors_${train_set} \
     --feat.cmvn-opts "--norm-means=false --norm-vars=false" \
     --chain.xent-regularize $xent_regularize \
@@ -229,7 +230,7 @@ if [ ! -z $decode_iter ]; then
 fi
 if [ $stage -le 15 ]; then
   rm $dir/.error 2>/dev/null || true
-  for decode_set in $maybe_rt03; do  # train_dev eval2000
+  for decode_set in train_dev eval2000 $maybe_rt03; do
       (
       steps/nnet3/decode.sh --acwt 1.0 --post-decode-acwt 10.0 \
           --nj $decode_nj --cmd "$decode_cmd" $iter_opts \
